@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bruco</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.5.0/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #222;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+
+
+        .background-image-1 {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 20%; /* Указать желаемую ширину */
+            height: 30%; /* Указать желаемую высоту */
+            z-index: -1;
+            background-image: url("{{ url_for('static', filename='pngwing_com.png') }}");
+            background-repeat: no-repeat;
+            background-size: contain;
+            background-position: top left;
+        }
+
+        .background-image-2 {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 20%; /* Указать желаемую ширину */
+            height: 30%; /* Указать желаемую высоту */
+            z-index: -1;
+            background-image: url("{{ url_for('static', filename='pngwing_com-2.png') }}");
+            background-repeat: no-repeat;
+            background-size: contain;
+            background-position: bottom right;
+        }
+
+        /* Дополнительные стили для контейнера и других элементов */
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 40px;
+            background-color: rgb(146,191,69);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-top: 200px;
+            border-radius: 50px;
+        }
+
+        .head_bruco {
+            font-size: 64px;
+            margin-bottom: 20px;
+            background: linear-gradient(108.15deg, #076B8D 0%, #5BD0A4 101.39%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-top: 5px;
+            padding-top: 10px;
+        }
+
+        .form-label {
+            font-weight: bold;
+        }
+
+        /* Измененные стили кнопки */
+        .btn-primary {
+            background-color: rgb(176,196,222);
+            border-color: rgb(176,196,222);
+            border-radius: 50px; /* Значение более 50px сделает кнопку более круглой */
+        }
+
+        .btn-primary:hover {
+            background-color:rgb(173,216,230);
+            border-color: rgb(176,224,230);
+        }
+
+        .btn-primary:focus {
+            box-shadow: 0 0 0 0.2rem rgba(0, 123,104,238);
+        }
+
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .button-container .btn {
+            background-color: rgb(255,218,185);
+            border-color: rgb(255,228,181);
+            text-decoration: none;
+            text-align: center;
+            height: 40px;
+            width: 140px;
+            margin: 15px;
+            border-radius: 50px; /* Значение более 50px сделает кнопку более круглой */
+        }
+
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .spinner-border {
+            display: inline-block;
+            width: 1.5rem;
+            height: 1.5rem;
+            vertical-align: text-bottom;
+            border: 0.25em solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            -webkit-animation: spinner-border 0.75s linear infinite;
+            animation: spinner-border 0.75s linear infinite;
+        }
+
+        @keyframes spinner-border {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-image-1"></div>
+    <div class="background-image-2"></div>
+    <div class="container">
+        <h1 class="head_bruco">Bruco</h1>
+        <form id="uploadForm" action="/process" method="POST" enctype="multipart/form-data" class="mt-4">
+                <div class="mb-3">
+                    <label for="photo" class="form-label">Выберите изображение</label>
+                    <input type="file" name="photo" id="photo" accept="image/*" required class="form-control">
+                </div>
+                <button type="submit" class="btn btn-primary">Отправить</button>
+        </form>
+        <div id="result" class="mt-4 button-container"></div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+        // Анимация при отправке формы
+        $('#uploadForm').submit(function(event) {
+            event.preventDefault(); // Предотвратить обычную отправку формы
+            var form = $(this);
+            var url = form.attr('action');
+            var formData = new FormData(form[0]);
+
+            $.ajax({
+                type: 'POST',
+                url: url,
+                data: formData,
+                processData: false,
+                contentType: false,
+                beforeSend: function() {
+                    $('#result').html('<div class="spinner-border text-primary" role="status"></div>'); // Отображение спиннера перед отправкой
+                },
+                success: function(response) {
+                    var buttonsHTML = '';
+                    for (var i = 0; i < response.length; i++) {
+                        var category = response[i];
+                        var controllerURL = '{{ url_for("process") }}' + '/' + category;
+                        buttonsHTML += '<button type="button" class="btn m-2">' +
+                            ' <a href="' + controllerURL + '" class="btn">' + category + '</a> ' +
+                            '</button>';
+                    }
+                    $('#result').html(buttonsHTML); // Вывод кнопок на странице
+
+                    // Добавляем обработчик события на нажатие ссылки
+                    $('#result a').click(function(event) {
+                        event.preventDefault(); // Предотвратить переход по ссылке
+                        var url = $(this).attr('href'); // Получить URL контроллера bathroom
+
+                        // Выполнить асинхронный запрос к контроллеру bathroom
+                        $.ajax({
+                            type: 'GET',
+                            url: url,
+                            success: function(response) {
+                                // Обновить результат на странице
+                                var resultHTML = '<div>';
+                                for (var i = 0; i < response.length; i++) {
+                                    var item = response[i];
+                                    resultHTML += '<p>' + item + '</p>';
+                                }
+                                resultHTML += '</div>';
+                                $('#result').html(resultHTML);
+                            }
+                        });
+                    });
+                }
+
+            });
+        });
+    });
+    </script>
+</body>
+</html>
